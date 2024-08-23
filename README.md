@@ -7,9 +7,9 @@ pip install -r requirements.txt
 ```
 
 # Datasets
-- ISTD [link](https://github.com/DeepInsight-PCALab/ST-CGAN))
 - ISTD+ [link](https://github.com/cvlab-stonybrook/SID))
 - SRD [Training](https://drive.google.com/file/d/1W8vBRJYDG9imMgr9I2XaA13tlFIEHOjS/view) [Testing](https://drive.google.com/file/d/1GTi4BmQ0SJ7diDMmf-b7x2VismmXtfTo/view) [Mask](https://uofmacau-my.sharepoint.com/:u:/g/personal/yb87432_um_edu_mo/EZ8CiIhNADlAkA4Fhim_QzgBfDeI7qdUrt6wv2EVxZSc2w?e=wSjVQT) (detected by [DHAN](https://github.com/vinthony/ghost-free-shadow-removal))
+- USR: Unpaired Shadow Removal Dataset [link](https://drive.google.com/file/d/1PPAX0W4eyfn1cUrb2aBefnbrmhB1htoJ/view)
 
 # Pretrained models
 [Link](https://pan.baidu.com/s/1X0hQMWJrIot9h3YjKs5USA?pwd=wb6r)<br>
