@@ -5,9 +5,9 @@
 
 ```bash
 pip install -r requirements.txt
-```bash
 
-### Datasets
+
+`Datasets`
 
 - ISTD [link]([http://example.com](https://github.com/DeepInsight-PCALab/ST-CGAN))
 - ISTD+ [link](http://[example.com](https://github.com/cvlab-stonybrook/SID))
