@@ -4,7 +4,7 @@
 - CUDA 11.1
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt```
 
 ### Datasets
 
