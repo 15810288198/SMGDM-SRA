@@ -2,7 +2,9 @@
 - Python 3.7
 - Pytorch 1.7
 - CUDA 11.1
-
+```bash
+pip install -r requirements.txt
+```
 
 # Datasets
 - ISTD [link](https://github.com/DeepInsight-PCALab/ST-CGAN))
@@ -27,7 +29,7 @@ You can directly test the performance of the pre-trained model as follows
 2. Test the model
 
     ```bash
-    python sr.py -p val -c config/shadow_SRD.json
+    python infer.py -p val -c config/shadow_SRD.json
     ```
 # Train
 
@@ -70,4 +72,7 @@ The testing results on dataset ISTD, ISTD+, SRD are: [results](https://pan.baidu
 
 # References
 
-Our implementation is based on [ShadowDiffusion]([link-to-ShadowDiffusion](https://github.com/GuoLanqing/ShadowDiffusion)) and [RePaint]([link-to-RePaint](https://github.com/andreas128/RePaint)). We would like to thank them.
+Our implementation is based on [ShadowDiffusion](https://github.com/GuoLanqing/ShadowDiffusion) and [RePaint](https://github.com/andreas128/RePaint). We would like to thank them.
+
+# Contact
+If you have any questions, please contact 20221081210210@buu.edu.cn
