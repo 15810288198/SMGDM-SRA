@@ -232,11 +232,11 @@ class GaussianDiffusion(nn.Module):
             # noise_level = 1.0 - (i / self.num_timesteps)  # 随时间递减的噪声水平
             # adjusted_noise = noise * noise_level
 
-            # b = self.betas
-            # a = (1 - b).cumprod(dim=0).index_select(0, t.long()).view(-1, 1, 1, 1)
-            # e = torch.randn_like(x_lr)
-            # x_noisy = x_lr * a.sqrt() + e * (1.0 - a).sqrt()
-            # xt = x_noisy * (1 - mask) + xt * mask
+            b = self.betas
+            a = (1 - b).cumprod(dim=0).index_select(0, t.long()).view(-1, 1, 1, 1)
+            e = torch.randn_like(x_lr)
+            x_noisy = x_lr * a.sqrt() + e * (1.0 - a).sqrt()
+            xt = x_noisy * (1 - mask) + xt * mask
 
             if i >= len(b)*0.2:
                 et, mask = self.denoise_fn(torch.cat([x_lr, mask_0, xt], dim=1), t)
