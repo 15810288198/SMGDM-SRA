@@ -47,8 +47,8 @@ You can directly test the performance of the pre-trained model as follows
            |-- test_B  # shadow mask
            |-- test_C  # shadow-free GT
     ```
-## AISTD AISTD Generated Shadow Dataset
-[Link]https://pan.baidu.com/s/14OiSlu_7l28DZDiXsejYcw?pwd=rbvs
+AISTD Generated Shadow Dataset [Link](https://pan.baidu.com/s/14OiSlu_7l28DZDiXsejYcw?pwd=rbvs)<br>
+
 2. You need to modify the following terms in `option.py`
 
     ```python
