@@ -1,5 +1,5 @@
 {
-    "name": "AISTD",
+    "name": "AISTD_310000",
     "phase": "train", // train or val
     "gpu_ids": [
        0
@@ -8,8 +8,8 @@
         "log": "logs",
         "tb_logger": "tb_logger",
         "results": "results",
-        "checkpoint": "checkpoint"
-        //"resume_state": "D:\\SMGDM-SRA\\data\\pth_v4\\I300000_E8009"
+        "checkpoint": "checkpoint",
+        "resume_state": "D:\\ShadowRemoval_AISTD\\core\\I310000_E7283"
     },
     "datasets": {
         "train": {
@@ -27,7 +27,7 @@
         "val": {
             "name": "CelebaHQ",
             "mode": "LRHR",
-            "dataroot": "/Project/Datasets/AISTD/test",
+            "dataroot": "D:\\Project\\Datasets\\AISTD\\test",
             "datatype": "img", //lmdb or img, path of img files
             "l_resolution": "test_low",
             "r_resolution": "test_high",
