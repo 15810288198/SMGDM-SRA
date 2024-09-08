@@ -20,10 +20,10 @@ data:
       drop_last: false
       ds_conf:
         name: random_ev2li_256
-      gt_path: D:\Project\SMGDM-SRA\experiments\AISTD_310000_240905_192845\results/without_BAR
+      gt_path: D:\Project\SMGDM-SRA\experiments\AISTD_300000_240908_131426\results/without_BAR
       image_size: 256
       mask_loader: true
-      mask_path: D:\Project\SMGDM-SRA\experiments\AISTD_310000_240905_192845\results/boundary_mask
+      mask_path: D:\Project\SMGDM-SRA\experiments\AISTD_300000_240908_131426\results/boundary_mask
       max_len: 1000
       paths:
         gt_keep_masks: ./log/test_inet256_ev2li/gt_keep_mask

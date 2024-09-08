@@ -102,7 +102,7 @@ class DDPM(BaseModel):
 
         self.log_dict['l_pix'] = l_pix.item()
 
-    def test(self, continous=False):
+    def test(self, continous):
         self.netG.eval()
         with torch.no_grad():
             if isinstance(self.netG, nn.DataParallel):

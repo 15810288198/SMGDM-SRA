@@ -412,7 +412,7 @@ class UNet(nn.Module):
 
         self.mask_tail = FCN()
 
-    def forward(self, x, time):
+    def forward(self, x, time,continous):
         x_lr = x[:, :3, :, :]
         x_mask = x[:, 3, :, :].unsqueeze(1)
         x_noisy = x[:, 4:, :, :]
@@ -445,8 +445,10 @@ class UNet(nn.Module):
                 x = layer(torch.cat((x, feat), dim=1), t)
             else:
                 x = layer(x)
-
-        return self.final_conv(x), self.mask_tail(x)
+        if continous:
+            return self.final_conv(x)
+        else:
+            return self.final_conv(x), self.mask_tail(x)
 
 
 

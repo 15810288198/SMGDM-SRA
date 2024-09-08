@@ -204,7 +204,7 @@ class GaussianDiffusion(nn.Module):
         return model_mean + noise * (0.5 * model_log_variance).exp()
 
     @torch.no_grad()
-    def p_sample_loop(self, x_lr, mask_0, continous=False):
+    def p_sample_loop(self, x_lr, mask_0, continous):
         device = self.betas.device
         n = x_lr.size(0)
         noise = torch.randn_like(x_lr)
@@ -225,21 +225,6 @@ class GaussianDiffusion(nn.Module):
 
         mask_np = mask.squeeze(1).cpu().numpy()  # 去掉通道维度，转换为 numpy 格式
 
-        boundary_mask = np.zeros_like(mask_np)  # 用于存储边界掩膜
-
-
-        for i in range(mask_np.shape[0]):  # 对每个样本进行处理
-            # 计算Sobel梯度以检测边缘
-            sobelx = cv2.Sobel(mask_np[i], cv2.CV_64F, 1, 0, ksize=5)
-            sobely = cv2.Sobel(mask_np[i], cv2.CV_64F, 0, 1, ksize=5)
-            gradient_magnitude = np.hypot(sobelx, sobely)  # 计算梯度幅度
-
-            # 根据阈值设置边界掩膜
-            boundary_mask[i] = (gradient_magnitude > 2).astype(np.float32)
-
-        # 将边界掩膜转换回PyTorch张量
-        boundary_mask = torch.from_numpy(boundary_mask).unsqueeze(1).to(mask.device)
-
         for i, j in zip(reversed(seq), reversed(seq_next)):
             t = (torch.ones(n) * i).to(device)
             next_t = (torch.ones(n) * j).to(device)
@@ -247,22 +232,21 @@ class GaussianDiffusion(nn.Module):
             at_next = self.compute_alpha(b, next_t.long())
             xt = xs[-1].to('cuda')
 
-            # 动态调整噪声
-            # noise_level = 1.0 - (i / self.num_timesteps)  # 随时间递减的噪声水平
-            # adjusted_noise = noise * noise_level
-
             b = self.betas
             a = (1 - b).cumprod(dim=0).index_select(0, t.long()).view(-1, 1, 1, 1)
             e = torch.randn_like(x_lr)
             x_noisy = x_lr * a.sqrt() + e * (1.0 - a).sqrt()
-
             xt = x_noisy * (1 - mask) + xt * mask
 
 
-            if i >= len(b)*0.2:
-                et, mask = self.denoise_fn(torch.cat([x_lr, mask, xt], dim=1), t)
+            if continous:
+                et= self.denoise_fn(torch.cat([x_lr, mask, xt], dim=1), t,continous)
             else:
-                et, mask = self.denoise_fn(torch.cat([x_lr, mask, xt], dim=1), t)
+                if i >= len(b) * 0.2:
+                    et,mask = self.denoise_fn(torch.cat([x_lr, mask_0, xt], dim=1), t,continous)
+                else:
+                    et,mask = self.denoise_fn(torch.cat([x_lr, mask, xt], dim=1), t,continous)
+
 
             x0_t = (xt - et * (1 - at).sqrt()) / at.sqrt()
             x0_preds.append(x0_t.to('cpu'))
@@ -285,7 +269,11 @@ class GaussianDiffusion(nn.Module):
         return self.p_sample_loop(SR,MASK, continous)
 
     @torch.no_grad()
-    def super_resolution(self, x_lr, mask, continous=False):
+    def super_resolution(self, x_lr, mask, continous):
+        return self.p_sample_loop(x_lr, mask, continous)
+
+    @torch.no_grad()
+    def SRD(self, x_lr, mask, continous=False):
         return self.p_sample_loop(x_lr, mask, continous)
 
     def q_sample(self, x_start, continuous_sqrt_alpha_cumprod, noise=None):
