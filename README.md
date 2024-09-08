@@ -54,7 +54,7 @@ AISTD Generated Shadow Dataset [Link](https://pan.baidu.com/s/14OiSlu_7l28DZDiXs
     ```python
     "resume_state": null  # if train from scratch
     "dataroot"           # training and testing set path
-    "gpu_ids": [0]       # Our model can be trained using a single RTX A5000 GPU. You can also train the model using multiple GPUs by changing this to [0, 1].
+    "gpu_ids": [0]       # Our model can be trained using a single A800 GPU. You can also train the model using multiple GPUs by changing this to [0, 1].
     ```
 
 3. Train the network
