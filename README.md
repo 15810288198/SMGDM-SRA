@@ -13,8 +13,7 @@ pip install -r requirements.txt
 
 # Pretrained models
 [Link](https://pan.baidu.com/s/1X0hQMWJrIot9h3YjKs5USA?pwd=wb6r)<br>
-Please download the corresponding pretrained model and modify the `resume_state` and `degradation_model_path` (optional) in `shadow.json`.
-
+Please download the corresponding pretrained model and update the resume_state and degradation_model_path (optional) fields in the shadow.json file. Additionally, place the 256x256_diffusion.pt model file in the model_path field of the test_inet256_ev2li.yml configuration.
 # Test
 
 You can directly test the performance of the pre-trained model as follows
