@@ -29,7 +29,7 @@ You can directly test the performance of the pre-trained model as follows
 2. Test the model
 
     ```bash
-    python infer.py -p val -c config/shadow_SRD.json
+    python infer.py -p val -c config/shadow.json
     ```
 # Train
 
