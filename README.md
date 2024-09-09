@@ -13,8 +13,7 @@ pip install -r requirements.txt
 
 # Pretrained models
 [Link](https://pan.baidu.com/s/1X0hQMWJrIot9h3YjKs5USA?pwd=wb6r)<br>
-Please download the corresponding pretrained model and modify the `resume_state` and `degradation_model_path` (optional) in `shadow.json`.
-
+Please download the corresponding pretrained model and update the resume_state and degradation_model_path (optional) fields in the shadow.json file. Additionally, place the 256x256_diffusion.pt model file in the model_path field of the test_inet256_ev2li.yml configuration.
 # Test
 
 You can directly test the performance of the pre-trained model as follows
@@ -29,7 +28,7 @@ You can directly test the performance of the pre-trained model as follows
 2. Test the model
 
     ```bash
-    python infer.py -p val -c config/shadow_SRD.json
+    python infer.py -p val -c config/shadow.json
     ```
 # Train
 
@@ -54,7 +53,7 @@ AISTD Generated Shadow Dataset [Link](https://pan.baidu.com/s/14OiSlu_7l28DZDiXs
     ```python
     "resume_state": null  # if train from scratch
     "dataroot"           # training and testing set path
-    "gpu_ids": [0]       # Our model can be trained using a single RTX A5000 GPU. You can also train the model using multiple GPUs by changing this to [0, 1].
+    "gpu_ids": [0]       # Our model can be trained using a single A800 GPU. You can also train the model using multiple GPUs by changing this to [0, 1].
     ```
 
 3. Train the network
