@@ -285,21 +285,6 @@ class GaussianDiffusion(nn.Module):
             (1 - continuous_sqrt_alpha_cumprod**2).sqrt() * noise
         )
 
-    def ssim_loss(self, img1, img2, C1=0.01 ** 2, C2=0.03 ** 2):
-        mu1 = F.avg_pool2d(img1, 3, 1, padding=1)
-        mu2 = F.avg_pool2d(img2, 3, 1, padding=1)
-        sigma1_sq = F.avg_pool2d(img1 ** 2, 3, 1, padding=1) - mu1 ** 2
-        sigma2_sq = F.avg_pool2d(img2 ** 2, 3, 1, padding=1) - mu2 ** 2
-        sigma12 = F.avg_pool2d(img1 * img2, 3, 1, padding=1) - mu1 * mu2
-        ssim_map = ((2 * mu1 * mu2 + C1) * (2 * sigma12 + C2)) / (
-                (mu1 ** 2 + mu2 ** 2 + C1) * (sigma1_sq + sigma2_sq + C2))
-        return 1 - ssim_map.mean()
-
-    def lab_color_loss(self,output, target):
-        output_lab = rgb2lab(output.permute(0, 2, 3, 1).cpu().numpy())
-        target_lab = rgb2lab(target.permute(0, 2, 3, 1).cpu().numpy())
-        return torch.mean(torch.abs(torch.tensor(output_lab) - torch.tensor(target_lab)))
-    # 改进点4
     def p_losses(self, x_in, noise=None):
         x_start = x_in['HR']
         [n, c, h, w] = x_start.shape
@@ -315,40 +300,13 @@ class GaussianDiffusion(nn.Module):
 
         loss = self.loss_func(e, x_recon)
 
-#         output = self.p_sample_loop(x_in['SR'],x_in['mask']).to("cuda:0")
-
-#         lab_color_loss = self.lab_color_loss(output,x_start)
-
-        # output_min = output.min()
-        # output_max = output.max()
-        # output_normalized = (output - output_min) / (output_max - output_min)
-        #
-        # x_start_min = x_start.min()
-        # x_start_max = x_start.max()
-        # x_start_normalized = (x_start - x_start_min) / (x_start_max - x_start_min)
-        # #ssim_loss = self.ssim_loss(output, x_start)
-        #
-        # # 实例化VGG损失函数
-        # vgg_loss = VGGLoss().to("cuda:0")
-        #
-        # # 计算SSIM损失和VGG损失
-        # ssim_loss_val = self.ssim_loss(output_normalized, x_start_normalized)
-        #
-        #
-        # output_normalized1 = normalize(output_normalized)
-        # x_start_normalized1 = normalize(x_start_normalized)
-        #
-        # vgg_loss_val = vgg_loss(output_normalized1, x_start_normalized1)
-
         res = (x_in['HR']+1)/2 - (x_in['SR']+1)/2
         res = torch.mean(res, dim=1, keepdim=True)
         # res = res * avg_channel_gt / avg_channel
         res_map = torch.where(res < 0.05, torch.zeros_like(res), torch.ones_like(res))
         loss_mask = self.loss_func(updated_mask, res_map)
-        #print("ssim_loss_val",ssim_loss_val,"vgg_loss_val",vgg_loss_val)
 
-        # 改进点4
-        return loss + loss_mask * 0.1 #+ lab_color_loss *0.1 #+ ssim_loss_val * 0.05 + vgg_loss_val * 0.05
+        return loss + loss_mask * 0.1
 
     def forward(self, x, *args, **kwargs):
         return self.p_losses(x, *args, **kwargs)
