@@ -296,7 +296,7 @@ class GaussianDiffusion(nn.Module):
         e = torch.randn_like(x_start)
         x_noisy = x_start * a.sqrt() + e * (1.0 - a).sqrt()
         x_recon, updated_mask = self.denoise_fn(
-            torch.cat([x_in['SR'],x_in['mask'], x_noisy], dim=1), t.float())
+            torch.cat([x_in['SR'],x_in['mask'], x_noisy], dim=1), t.float(),False)
 
         loss = self.loss_func(e, x_recon)
 

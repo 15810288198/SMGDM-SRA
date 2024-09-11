@@ -9,8 +9,10 @@ from core.wandb_logger import WandbLogger
 from tensorboardX import SummaryWriter
 import os
 import numpy as np
+import random
+import shutil
 
-#import wandb
+# import wandb
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -46,13 +48,25 @@ if __name__ == "__main__":
         val_step = 0
     else:
         wandb_logger = None
+    # ######### Set Seeds ###########
+    random.seed(1234)
+    np.random.seed(1234)
+    torch.manual_seed(1234)
+    torch.cuda.manual_seed_all(1234)
 
+    print(opt['datasets'])
     # dataset
     for phase, dataset_opt in opt['datasets'].items():
         if phase == 'train' and args.phase != 'val':
             train_set = Data.create_dataset(dataset_opt, phase)
             train_loader = Data.create_dataloader(
                 train_set, dataset_opt, phase)
+        elif phase == 'val':
+            print(dataset_opt['data_len'])
+            dataset_opt['data_len'] = -1
+            val_set = Data.create_dataset(dataset_opt, phase)
+            val_loader = Data.create_dataloader(
+                val_set, dataset_opt, phase)
     logger.info('Initial Dataset Finished')
 
     # model
@@ -71,6 +85,10 @@ if __name__ == "__main__":
 
     diffusion.set_new_noise_schedule(
         opt['model']['beta_schedule'][opt['phase']], schedule_phase=opt['phase'])
+
+    best_psnr = 0.0
+    best_ssim = 0.0
+    save_status = False
     if opt['phase'] == 'train':
         while current_step < n_iter:
             current_epoch += 1
@@ -95,6 +113,9 @@ if __name__ == "__main__":
 
                 # validation
                 if current_step % opt['train']['val_freq'] == 0:
+                    avg_psnr = 0.0
+                    avg_ssim = 0.0
+                    idx = 0
                     result_path = '{}/{}'.format(opt['path']
                                                  ['results'], current_epoch)
                     os.makedirs(result_path, exist_ok=True)
@@ -102,32 +123,105 @@ if __name__ == "__main__":
                     diffusion.set_new_noise_schedule(
                         opt['model']['beta_schedule']['val'], schedule_phase='val')
 
-                    for idx in range(sample_sum):
-                        diffusion.sample(continous=False)
-                        visuals = diffusion.get_current_visuals(sample=True)
-                        sample_img = Metrics.tensor2img(
-                            visuals['SAM'])  # uint8
+                    for _, val_data in enumerate(val_loader):
+                        idx += 1
+                        diffusion.feed_data(val_data)
+                        diffusion.test(continous=False)
+                        visuals = diffusion.get_current_visuals()
+                        sr_img = Metrics.tensor2img(visuals['SR'])  # uint8
+                        hr_img = Metrics.tensor2img(visuals['HR'])  # uint8
+                        lr_img = Metrics.tensor2img(visuals['LR'])  # uint8
+                        fake_img = Metrics.tensor2img(visuals['INF'], min_max=(0, 1))  # uint8
+                        #
                         # generation
                         Metrics.save_img(
-                            sample_img, '{}/{}_{}_sr.png'.format(result_path, current_step, idx))
+                            hr_img, '{}/{}_{}_hr.png'.format(result_path, current_step, idx))
+                        Metrics.save_img(
+                            sr_img, '{}/{}_{}_sr.png'.format(result_path, current_step, idx))
+                        Metrics.save_img(
+                            lr_img, '{}/{}_{}_lr.png'.format(result_path, current_step, idx))
 
-                        tb_logger.add_image(
-                            'Iter_{}'.format(current_step),
-                            np.transpose(sample_img, [2, 0, 1]),
-                            idx)
+                        avg_psnr += Metrics.calculate_psnr(
+                            sr_img, hr_img)
+                        avg_ssim += Metrics.calculate_ssim(sr_img, hr_img)
+                        # Metrics.save_img1(
+                        #     fake_img, '{}/{}_{}_inf.png'.format(result_path, current_step, idx))
+                        # tb_logger.add_image(
+                        #     'Iter_{}'.format(current_step),
+                        #     np.transpose(np.concatenate(
+                        #         (sr_img, hr_img), axis=1), [2, 0, 1]),
+                        #     idx)
+                    print(avg_psnr)
+                    # 计算整个测试集的平均PSNR和SSIM
+                    avg_psnr = avg_psnr / idx
+                    avg_ssim = avg_ssim / idx
 
-                        if wandb_logger:
-                            wandb_logger.log_image(f'validation_{idx}', sample_img)
+                    # 将平均PSNR和SSIM用作保存最佳模型的标准
+                    if avg_psnr >= best_psnr and avg_ssim >= best_ssim:
+                        best_psnr = avg_psnr
+                        best_ssim = avg_ssim
+                        save_status = True
+                        # 设置结果路径，仅保留到 'results' 目录
+                        result_path = result_path.rsplit('/', 1)[
+                            0]  # 将路径修改为 'experiments\\test_istdplus_1_240904_152123\\results'
+                        # 删除 'results' 目录下的所有其他子目录
+                        for dir_name in (d for d in os.listdir(result_path) if
+                                         os.path.isdir(os.path.join(result_path, d))):
+                            print(dir_name)
+                            dir_path = os.path.join(result_path, dir_name)
 
+                            if int(dir_name) != current_epoch:
+                                if os.path.isdir(dir_path):
+                                    try:
+                                        shutil.rmtree(dir_path)
+                                        logger.info(f'Removed old directory: {dir_path}')
+                                    except Exception as e:
+                                        logger.error(f'Failed to remove old directory {dir_path}: {e}')
                     diffusion.set_new_noise_schedule(
                         opt['model']['beta_schedule']['train'], schedule_phase='train')
+                    # log
+                    logger.info('# Validation # PSNR: {:.4e}'.format(avg_psnr))
+                    logger.info('# Validation # SSIM: {:.4e}'.format(avg_ssim))
+                    logger_val = logging.getLogger('val')  # validation logger
+                    if avg_psnr >= best_psnr and best_ssim >= avg_ssim:
+                        best_psnr = avg_psnr
+                        best_ssim = avg_ssim
+                        save_status = True
+                    logger_val.info('<epoch:{:3d}, iter:{:8,d}> psnr: {:.4e} ssim: {:.4e}'.format(
+                        current_epoch, current_step, avg_psnr, avg_ssim))
+                    # tensorboard logger
+                    tb_logger.add_scalar('psnr', avg_psnr, current_step)
+                    tb_logger.add_scalar('ssim', avg_ssim, current_step)
+                    if wandb_logger:
+                        wandb_logger.log_metrics({
+                            'validation/val_psnr': avg_psnr,
+                            'validation/val_ssim': avg_ssim,
+                            'validation/val_step': val_step
+                        })
+                        val_step += 1
 
-                if current_step % opt['train']['save_checkpoint_freq'] == 0:
+                if current_step % opt['train']['save_checkpoint_freq'] == 0 and save_status:
                     logger.info('Saving models and training states.')
+                    # 删除之前保存的模型，只保留最新的最佳模型
+                    checkpoint_dir = os.path.join(opt['path']['checkpoint'])
+
+                    for file_name in os.listdir(checkpoint_dir):
+                        if not file_name.endswith(f'epoch_{current_epoch}_iter_{current_step}.pth'):
+                            file_path = os.path.join(checkpoint_dir, file_name)
+                            try:
+                                os.remove(file_path)
+                                logger.info(f'Removed old checkpoint: {file_path}')
+                            except Exception as e:
+                                logger.error(f'Failed to remove old checkpoint {file_path}: {e}')
+
                     diffusion.save_network(current_epoch, current_step)
+                    save_status = False
 
                     if wandb_logger and opt['log_wandb_ckpt']:
                         wandb_logger.log_checkpoint(current_epoch, current_step)
+
+                if wandb_logger:
+                    wandb_logger.log_metrics({'epoch': current_epoch - 1})
 
         # save model
         logger.info('End of training.')
@@ -149,15 +243,17 @@ if __name__ == "__main__":
                 sample_num = sample_img.shape[0]
                 for iter in range(0, sample_num):
                     Metrics.save_img(
-                        Metrics.tensor2img(sample_img[iter]), '{}/{}_{}_sample_{}.png'.format(result_path, current_step, idx, iter))
+                        Metrics.tensor2img(sample_img[iter]),
+                        '{}/{}_{}_sample_{}.png'.format(result_path, current_step, idx, iter))
             else:
                 # grid img
                 sample_img = Metrics.tensor2img(visuals['SAM'])  # uint8
                 Metrics.save_img(
                     sample_img, '{}/{}_{}_sample_process.png'.format(result_path, current_step, idx))
                 Metrics.save_img(
-                    Metrics.tensor2img(visuals['SAM'][-1]), '{}/{}_{}_sample.png'.format(result_path, current_step, idx))
-            
+                    Metrics.tensor2img(visuals['SAM'][-1]),
+                    '{}/{}_{}_sample.png'.format(result_path, current_step, idx))
+
             sample_imgs.append(Metrics.tensor2img(visuals['SAM'][-1]))
 
         if wandb_logger:
